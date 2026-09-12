@@ -58,8 +58,12 @@ export default function Login() {
           try {
             await loginWithGoogle({ email: payload.email, name: payload.name, picture: payload.picture });
             navigate("/", { replace: true });
-          } catch {
-            setError("Đăng nhập Google thất bại, thử lại sau");
+          } catch (err: any) {
+            // Log the real cause (network error, 4xx/5xx + backend message) to
+            // the console — check DevTools > Console/Network when debugging.
+            console.error("Google login failed:", err);
+            const detail = err?.response?.data?.error;
+            setError(detail ? `Đăng nhập Google thất bại: ${detail}` : "Đăng nhập Google thất bại, thử lại sau");
           } finally {
             setLoading(false);
           }
