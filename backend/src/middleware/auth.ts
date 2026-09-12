@@ -14,12 +14,11 @@ interface HkfinJwtPayload {
   exp: number;
 }
 
-// Trading Journal has no login of its own. A user authenticates on hkfin,
-// which issues a standard HS256 JWT (see agent/api_server.py:
-// generate_jwt_token, payload { sub: email, id, role, exp }). The frontend
-// forwards that same token as a Bearer header here; verifying it with the
-// same JWT_SECRET_KEY is what "links" a journal entry to the exact hkfin
-// user, with no separate account or link table needed.
+// Trading Journal signs in via its own Google flow (routes/auth.ts) using
+// the same JWT_SECRET_KEY and payload shape { sub: email, id, role, exp }
+// that hkfin's login issues (see agent/api_server.py: generate_jwt_token) —
+// so a token from either app is valid here, and the id links straight to
+// the row in the shared `users` table, no separate account/link table needed.
 export function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (header && header.startsWith("Bearer ")) {
@@ -33,13 +32,9 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
         return next();
       }
     } catch {
-      // Fall through to default fallback user
+      // Invalid/expired token falls through to 401 below
     }
   }
 
-  // Vào thẳng không cần token
-  req.userId = BigInt(1);
-  req.userEmail = "trader@tradingjournal.app";
-  req.userRole = "admin";
-  next();
+  res.status(401).json({ error: "Chưa đăng nhập hoặc phiên đã hết hạn" });
 }

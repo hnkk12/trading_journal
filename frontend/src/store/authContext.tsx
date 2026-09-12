@@ -2,34 +2,25 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import { api } from "../api/client";
 import { User } from "../types";
 
+interface GoogleProfile {
+  email: string;
+  name: string;
+  picture?: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  loginWithGoogle: (profile: GoogleProfile) => Promise<void>;
   loginWithToken: (token: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const DEFAULT_USER: User = {
-  id: "1",
-  email: "trader@tradingjournal.app",
-  name: "Trader",
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User>(() => {
-    const cached = localStorage.getItem("tj_user");
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch {
-        // fallback
-      }
-    }
-    return DEFAULT_USER;
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function init() {
@@ -39,8 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           await loginWithToken(urlToken);
         } catch {
-          // ignore
+          // ignore, falls through to normal check below
         }
+        setLoading(false);
         return;
       }
 
@@ -51,32 +43,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(res.data);
           localStorage.setItem("tj_user", JSON.stringify(res.data));
         } catch {
-          // keep DEFAULT_USER
+          localStorage.removeItem("tj_token");
+          localStorage.removeItem("tj_user");
+          setUser(null);
         }
       }
+      setLoading(false);
     }
     init();
   }, []);
 
   async function loginWithToken(token: string) {
     localStorage.setItem("tj_token", token);
-    try {
-      const res = await api.get("/auth/me");
-      localStorage.setItem("tj_user", JSON.stringify(res.data));
-      setUser(res.data);
-    } catch {
-      setUser(DEFAULT_USER);
-    }
+    const res = await api.get("/auth/me");
+    localStorage.setItem("tj_user", JSON.stringify(res.data));
+    setUser(res.data);
+  }
+
+  async function loginWithGoogle(profile: GoogleProfile) {
+    const res = await api.post("/auth/google", profile);
+    localStorage.setItem("tj_token", res.data.token);
+    localStorage.setItem("tj_user", JSON.stringify(res.data.user));
+    setUser(res.data.user);
   }
 
   function logout() {
     localStorage.removeItem("tj_token");
     localStorage.removeItem("tj_user");
-    setUser(DEFAULT_USER);
+    setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithToken, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithToken, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

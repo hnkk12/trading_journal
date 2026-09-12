@@ -14,6 +14,15 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 
 function ProtectedShell() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-gray-400">Đang tải...</div>;
+  }
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <FilterProvider>
       <TradeModalProvider>
@@ -27,7 +36,7 @@ function ProtectedShell() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<Login />} />
       <Route element={<ProtectedShell />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/trades" element={<Trades />} />
