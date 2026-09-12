@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../store/authContext";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const HKFIN_URL = import.meta.env.VITE_HKFIN_URL || "https://hkfin-ai.vercel.app";
 
 // Same client-side decode hkfin's Login page uses — the ID token's signature
 // is verified again server-side by Google when the backend re-checks it is
@@ -29,6 +30,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showRegisterNotice, setShowRegisterNotice] = useState(false);
 
   useEffect(() => {
     if (user) navigate("/", { replace: true });
@@ -113,6 +115,34 @@ export default function Login() {
             </div>
           )}
         </div>
+
+        {showRegisterNotice ? (
+          <div className="mt-5 rounded-lg border border-brand/20 bg-brand-light/40 p-4 text-left text-xs leading-relaxed text-gray-600">
+            <p>
+              Trading Journal dùng chung tài khoản với hkfin, nên việc đăng ký cũng thực hiện bên hkfin.
+              Bấm vào link bên dưới để đăng ký (Google hoặc email/mật khẩu), xong quay lại đây đăng nhập bằng đúng tài khoản đó.
+            </p>
+            <a
+              href={`${HKFIN_URL}/register`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block font-semibold text-brand hover:underline"
+            >
+              Mở trang đăng ký hkfin →
+            </a>
+          </div>
+        ) : (
+          <p className="mt-5 text-center text-xs text-gray-400">
+            Chưa có tài khoản?{" "}
+            <button
+              type="button"
+              onClick={() => setShowRegisterNotice(true)}
+              className="font-semibold text-brand hover:underline"
+            >
+              Đăng ký
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );

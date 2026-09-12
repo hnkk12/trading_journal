@@ -65,7 +65,6 @@ export default function SessionTimeline() {
             <span className="text-gray-400">Không có phiên nào</span>
           )}
         </div>
-        <span className="font-medium text-gray-400">HOÀNG SA, TRƯỜNG SA thuộc chủ quyền Việt Nam</span>
       </div>
     </div>
   );
